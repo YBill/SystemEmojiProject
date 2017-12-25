@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_margin="10dp"
-    android:background="#ffffff"
-    android:orientation="vertical">
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:layout_marginLeft="10dp"
+              android:layout_marginRight="10dp"
+              android:layout_marginTop="10dp"
+              android:background="#ffffff"
+              android:orientation="vertical">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -17,7 +19,7 @@
             android:layout_height="wrap_content"
             android:background="#00000000"
             android:gravity="left|top"
-            android:lines="4" />
+            android:lines="4"/>
 
     </FrameLayout>
 
@@ -30,30 +32,44 @@
             android:id="@+id/btn_keyboard"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="键盘" />
+            android:text="键盘"/>
 
         <Button
             android:id="@+id/btn_send"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
-            android:text="发送" />
+            android:text="发送"/>
 
         <Button
             android:id="@+id/btn_cancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_toLeftOf="@id/btn_send"
-            android:text="取消" />
+            android:text="取消"/>
     </RelativeLayout>
 
     <FrameLayout
         android:id="@+id/frame_emoji"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_marginTop="5dp"
-        android:background="#999999"
-        android:visibility="gone">
+        android:layout_height="198dp"
+        android:background="#FCFCFC"
+        android:paddingTop="10dp"
+        android:visibility="visible">
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/view_pager"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:id="@+id/page_turning_point"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center"
+            android:layout_marginBottom="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"/>
 
     </FrameLayout>
 

@@ -8,18 +8,25 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.view.ViewPager;
+import android.text.Editable;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by yuanweibiao on 2017/12/24.
@@ -33,6 +40,9 @@ public class CustomDialog extends Dialog implements View.OnClickListener {
     private Button keyBoardBtn;
     private Button cancelBtn;
     private View emojiLayout;
+    private LinearLayout pageTurningPoint;
+    private ViewPager viewPager;
+    private int[] emojiCodes;
 
     private int mPendingShowPlaceHolder = 0;
 
@@ -43,6 +53,7 @@ public class CustomDialog extends Dialog implements View.OnClickListener {
     public CustomDialog(@NonNull Context context, int themeResId) {
         super(context, themeResId);
         this.activity = (Activity) context;
+        emojiCodes = activity.getResources().getIntArray(R.array.emoji_code);
     }
 
     @Override
@@ -52,15 +63,31 @@ public class CustomDialog extends Dialog implements View.OnClickListener {
         manager = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
         initDialog(getContext());
         initView();
+        showEmojiView();
+        initPageTurningPoint();
     }
 
     private void initView() {
+        pageTurningPoint = (LinearLayout) this.findViewById(R.id.page_turning_point);
+        viewPager = (ViewPager) this.findViewById(R.id.view_pager);
         emojiLayout = this.findViewById(R.id.frame_emoji);
         editText = (EditText) this.findViewById(R.id.edit_text);
         keyBoardBtn = (Button) this.findViewById(R.id.btn_keyboard);
         cancelBtn = (Button) this.findViewById(R.id.btn_cancel);
         keyBoardBtn.setOnClickListener(this);
         cancelBtn.setOnClickListener(this);
+        viewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                for (int i = 0; i < mPointViews.size(); i++) {
+                    mPointViews.get(i).setImageResource(page_indicatorId[1]);
+                    if (position != i) {
+                        mPointViews.get(i).setImageResource(page_indicatorId[0]);
+                    }
+                }
+            }
+        });
         editText.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -77,10 +104,10 @@ public class CustomDialog extends Dialog implements View.OnClickListener {
         @Override
         public boolean onPreDraw() {
             if (mPendingShowPlaceHolder == 0) {
-                /*if (emojiLayout.getVisibility() == View.VISIBLE && isSoftInputShown()) {
+                if (emojiLayout.getVisibility() == View.VISIBLE && isSoftInputShown()) {
                     emojiLayout.setVisibility(View.GONE);
                     return false;
-                }*/
+                }
             } else {
                 if (isSoftInputShown()) {
                     /*ViewGroup.LayoutParams params = emojiLayout.getLayoutParams();
@@ -138,6 +165,112 @@ public class CustomDialog extends Dialog implements View.OnClickListener {
             }
             this.show();
         }
+    }
+
+    private void initPageTurningPoint() {
+        pageTurningPoint.removeAllViews();
+        int length = 0;
+        int quotient = emojiCodes.length / emojiPageNum;
+        int remainder = emojiCodes.length % emojiPageNum;
+        if (remainder > 0) {
+            length = quotient + 1;
+        }
+        for (int count = 0; count < length; count++) {
+            // 翻页指示的点
+            ImageView pointView = new ImageView(getContext());
+            pointView.setPadding(5, 0, 5, 0);
+            if (mPointViews.isEmpty())
+                pointView.setImageResource(page_indicatorId[1]);
+            else
+                pointView.setImageResource(page_indicatorId[0]);
+            mPointViews.add(pointView);
+            pageTurningPoint.addView(pointView);
+        }
+
+    }
+
+    private int[] page_indicatorId = new int[]{R.drawable.emoji_point_normal_bg, R.drawable.emoji_point_press_bg};
+    private ArrayList<ImageView> mPointViews = new ArrayList<>();
+    private List<View> emojiLists;
+    private int emojiPageNum = 20;
+
+    private void showEmojiView() {
+        if (emojiLists == null) {
+            emojiLists = new ArrayList<>();
+            int length = 0;
+            int quotient = emojiCodes.length / emojiPageNum;
+            int remainder = emojiCodes.length % emojiPageNum;
+            if (remainder > 0) {
+                length = quotient + 1;
+            }
+            for (int i = 0; i < length; i++) {
+                emojiLists.add(getEmojiItemViews(i));
+            }
+            viewPager.setAdapter(new ExpressionPagerAdapter(emojiLists));
+        }
+    }
+
+    private View getEmojiItemViews(int page) {
+        List<EmojiEntity> list = new ArrayList<>();
+        int start = emojiPageNum * page;
+        int length = (page + 1) * emojiPageNum;
+        for (int i = start; i < length; i++) {
+            if (i < emojiCodes.length) {
+                EmojiEntity entity = new EmojiEntity(getEmojiStringByUnicode(emojiCodes[i]));
+                list.add(entity);
+            } else {
+                list.add(new EmojiEntity(""));
+            }
+        }
+        list.add(new EmojiEntity(""));
+
+        View view = View.inflate(activity, R.layout.layout_expression_gridview, null);
+        ExpandGridView gridView = (ExpandGridView) view.findViewById(R.id.gridview);
+        final ExpressionGridViewAdapter gridViewAdapter = new ExpressionGridViewAdapter(activity, list);
+        gridView.setAdapter(gridViewAdapter);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                int start = editText.getSelectionStart();
+                int end = editText.getSelectionEnd();
+                Editable editable = editText.getText();
+                if (position == 20) {
+                    if (editable.length() <= 0) {
+                        return;
+                    }
+                    if (start == end) {
+                        char lastStr = editable.charAt(editable.length() - 1);
+                        int interval = 1;
+                        if (!isEmojiCharacter(lastStr)) {
+                            interval = 2;
+                        }
+                        editable.insert(start, gridViewAdapter.getItem(position).code);
+                        editable.delete(start - interval, start);
+                    } else {
+                        editable.replace(start, end, "");
+                    }
+                } else {
+                    if (start == end) {
+                        editable.insert(start, gridViewAdapter.getItem(position).code);
+                    } else {
+                        editable.replace(start, end, gridViewAdapter.getItem(position).code);
+                    }
+                }
+            }
+        });
+
+        return view;
+    }
+
+    private boolean isEmojiCharacter(char codePoint) {
+        return (codePoint == 0x0) || (codePoint == 0x9) || (codePoint == 0xA) ||
+                (codePoint == 0xD) || ((codePoint >= 0x20) && (codePoint <= 0xD7FF)) ||
+                ((codePoint >= 0xE000) && (codePoint <= 0xFFFD)) || ((codePoint >= 0x10000)
+                && (codePoint <= 0x10FFFF));
+    }
+
+    private String getEmojiStringByUnicode(int unicodeJoy) {
+        return new String(Character.toChars(unicodeJoy));
     }
 
     public static class Builder {
@@ -201,14 +334,12 @@ public class CustomDialog extends Dialog implements View.OnClickListener {
          */
         if (Build.VERSION.SDK_INT >= 20) {
             // When SDK Level >= 20 (Android L), the softInputHeight will contain the height of softButtonsBar (if has)
-//            Log.d("Bill", "getSoftButtonsBarHeight:" + getSoftButtonsBarHeight());
             softInputHeight = softInputHeight - getSoftButtonsBarHeight();
         }
 
         if (softInputHeight < 0) {
-//            Log.w("Bill", "EmotionKeyboard--Warning: value of softInputHeight is below zero!");
+            Log.w("Bill", "EmotionKeyboard--Warning: value of softInputHeight is below zero!");
         }
-//        Log.d("Bill", "softInputHeight:" + softInputHeight);
         return softInputHeight;
     }
 
